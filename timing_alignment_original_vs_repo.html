@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>06 — Timing Alignment: Original SUMMER vs Our Pipeline</title>
+<style>
+:root{--bg:#09111e;--panel:#111d31;--panel2:#172740;--text:#edf4ff;--muted:#aab9d2;--line:#344866;--cyan:#6fe4d3;--blue:#74b8ff;--yellow:#ffd166;--pink:#ff83a8;--green:#91e39a;--red:#ff8484;--purple:#c39cff}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:linear-gradient(180deg,#07101c,#0a1220 320px);color:var(--text);font:16px/1.68 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:1180px;margin:auto;padding:26px}.nav{position:sticky;top:0;z-index:20;background:rgba(9,17,30,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);margin:0 -26px;padding:10px 26px;display:flex;gap:8px;flex-wrap:wrap}.nav a{color:#d9e8ff;text-decoration:none;background:#172740;border:1px solid #324766;padding:6px 10px;border-radius:999px;font-size:13px}.nav a:hover,.nav a.current{border-color:var(--cyan);color:var(--cyan)}.hero{padding:42px 0 18px}.eyebrow{color:var(--cyan);font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:13px}h1{font-size:43px;line-height:1.14;margin:.25em 0}h2{font-size:30px;margin-top:52px}h3{font-size:21px;margin-top:26px}.lead{font-size:20px;color:#d8e3f5;max-width:960px}.card{background:rgba(17,29,49,.95);border:1px solid var(--line);border-radius:16px;padding:18px;margin:14px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:15px}.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}.key,.note,.warn,.good{padding:14px 16px;border-radius:9px;margin:15px 0}.key{border-left:4px solid var(--cyan);background:#12282b}.note{border-left:4px solid var(--yellow);background:#282516}.warn{border-left:4px solid var(--red);background:#2a1821}.good{border-left:4px solid var(--green);background:#172719}.eq{font-size:20px;text-align:center;padding:14px;background:#0d1728;border:1px solid #2d4160;border-radius:12px;margin:14px 0}.small,.muted{color:var(--muted);font-size:14px}code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}pre{background:#080f1b;border:1px solid #2b3c59;border-radius:12px;padding:15px;overflow:auto;color:#dce8fb}table{width:100%;border-collapse:collapse;background:#0f192a;margin:15px 0}th,td{border:1px solid #334661;padding:10px;text-align:left;vertical-align:top}th{background:#182942}.metric{font-size:30px;font-weight:800;color:var(--cyan)}.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:18px 0;align-items:stretch}.step{background:#14223a;border:1px solid #34506f;border-radius:12px;padding:13px;text-align:center}.step.original{border-color:#c39cff}.step.ours{border-color:#6fe4d3}.arrow{display:flex;align-items:center;justify-content:center;color:var(--blue);font-size:22px}.tag{display:inline-block;padding:3px 9px;border-radius:99px;background:#213452;font-size:13px;margin:2px}.rank1{border-color:#ff8484}.rank2{border-color:#ffd166}.rank3{border-color:#74b8ff}.bars{display:grid;gap:10px;margin:15px 0}.barrow{display:grid;grid-template-columns:190px 1fr 100px;align-items:center;gap:10px}.bar{height:18px;background:#1c2b45;border-radius:99px;overflow:hidden}.fill{height:100%;background:linear-gradient(90deg,#74b8ff,#6fe4d3)}.quiz{background:#121f35;border:1px dashed #607ca7;border-radius:12px;padding:14px;margin:12px 0}.sources a{color:#bfe1ff}@media(max-width:800px){.wrap{padding:18px}.nav{margin:0 -18px;padding:10px 18px}.two{grid-template-columns:1fr}.flow{grid-template-columns:1fr}.barrow{grid-template-columns:1fr}.barrow .bar{height:12px}h1{font-size:34px}}
+</style></head>
+<body><div class="wrap">
+<nav class="nav">
+<a href="study_index.html">Index</a>
+<a href="./">01 P001 Rows</a>
+<a href="p001_count_models.html">02 Count Models</a>
+<a href="experiment_design.html">03 Experiment Design</a>
+<a href="p002_m0_nuisance_baseline.html">04 P002 M0</a>
+<a href="p003_m1_sensory_model.html">05 P003 M1</a>
+<a class="current" href="timing_alignment_original_vs_repo.html">06 Timing Alignment</a>
+</nav>
+
+<header class="hero">
+<div class="eyebrow">06 · P006 Phase A · timing / identity audit</div>
+<h1>Original SUMMER의 event time과<br>우리 P001 event time은 어떻게 만들어지는가?</h1>
+<p class="lead">P006의 핵심 결과는 “두 timing이 몇 ms 다르다”가 아닙니다. 아직 같은 physical event를 양쪽에서 안정적으로 identify하지 못했기 때문에 <b>timing residual을 계산할 수 없었다</b>는 것입니다. 이 장에서는 original Figure 7 path, 우리 canonical/watchlog path, 그리고 P006이 두 path를 어떻게 연결하려 했는지를 분리해 이해합니다.</p>
+<div class="warn"><b>가장 중요한 결론:</b> 현재 disposition은 <code>UNRESOLVED_ALIGNMENT_IDENTITY</code>이지 <code>TIMING_MISMATCH</code>가 아닙니다. 0 unique pairs라는 사실만으로 “우리 timestamp가 틀렸다”고 결론낼 수 없습니다.</div>
+</header>
+
+<section><h2>1. 먼저 세 개의 clock을 구분하자</h2>
+<div class="grid">
+<div class="card"><h3>Movie clock</h3><p>영화 내부 시간. 예: <code>movie PTS = 1234.56 s</code>. 25 fps라서 nominal frame interval은 40 ms입니다.</p></div>
+<div class="card"><h3>Presentation/laptop clock</h3><p>실제 실험 laptop에서 해당 frame이 display된 wall-clock time입니다. pause가 발생하면 movie clock은 멈추지만 laptop clock은 계속 갑니다.</p></div>
+<div class="card"><h3>Neural recording clock</h3><p>NeuraLynx acquisition system의 시간축. Spike times와 event times가 최종적으로 비교되는 좌표입니다.</p></div>
+</div>
+<pre>movie PTS
+   │  frame displayed
+   ▼
+presentation laptop time
+   │  TTL pulses every ~1 s establish synchronization
+   ▼
+neural recording time
+   │
+   └── spikes live on this clock</pre>
+<p>Original paper에서는 presentation laptop의 frame log와 acquisition computer의 TTL arrival timestamps를 이용해 두 clock 사이의 linear transformation을 만들었다고 설명합니다. 보고된 평균 transformation error는 2.30 ms였습니다.</p>
+</section>
+
+<section><h2>2. Original SUMMER Figure 7의 timing path</h2>
+<div class="flow">
+<div class="step original"><b>Movie annotation</b><br><span class="small">camera-cuts / scenes</span></div>
+<div class="step original"><b>Raw playback + sync</b><br><span class="small">FFmpeg frame log + TTL</span></div>
+<div class="step original"><b>aligned_labels.npy</b><br><span class="small">precomputed upstream</span></div>
+<div class="step original"><b>annotations_patient_aligned</b><br><span class="small">NWB table</span></div>
+<div class="step original"><b>Figure 7 / ZETA</b><br><span class="small">start_time used directly</span></div>
+</div>
+<div class="key"><b>Original analysis의 핵심:</b> Figure 7 code는 Camera Cut timing을 analysis 시점에 <code>cleaned_watchlogs</code>에서 다시 계산하지 않습니다. 각 subject NWB의 <code>annotations_patient_aligned.start_time</code>을 그대로 onset으로 사용합니다.</div>
+<pre># official responsive-unit logic, conceptually
+starts = annotations_patient_aligned["start_time"]
+starts = starts[value == 1]
+
+onsets = valid starts after same-label isolation
+zetatest(spike_times / 1000, onsets / 1000, 1 sec)</pre>
+<p>또한 official NWB-generation code는 <code>aligned_labels.npy</code>를 읽어 <code>annotations_patient_aligned</code>를 만듭니다. 중요한 제한점은 <b>이 aligned_labels.npy 자체를 생성한 upstream alignment code가 public repository에 포함되어 있지 않다</b>는 점입니다. 따라서 patient-aligned timestamp가 raw watchlog와 TTL transform을 거쳐 정확히 어떤 세부 규칙으로 만들어졌는지 public code만으로 완전히 재구성할 수 없습니다.</p>
+<div class="note">Scientific Data paper는 <code>annotations_patient_aligned</code>가 각 patient의 <b>raw watchlog</b>에 추가로 aligned되어 pause와 playback alteration을 직접 반영한다고 설명합니다.</div>
+</section>
+
+<section><h2>3. 우리 P001의 timing path</h2>
+<div class="flow">
+<div class="step ours"><b>Public base annotation</b><br><span class="small">common movie time</span></div>
+<div class="step ours"><b>Stable canonical event</b><br><span class="small">event ID / frame</span></div>
+<div class="step ours"><b>Cleaned watchlog PTS</b><br><span class="small">exact frame-time match</span></div>
+<div class="step ours"><b>neural_recording_time</b><br><span class="small">subject-specific</span></div>
+<div class="step ours"><b>P001 event time</b><br><span class="small">spikes aligned here</span></div>
+</div>
+<p>우리 pipeline은 subject-local patient-aligned row identity를 사용하지 않습니다. 대신 common-movie event를 먼저 안정적으로 정의한 뒤, 각 subject의 <code>cleaned_watchlogs</code>에서 해당 movie PTS를 찾습니다.</p>
+<pre>canonical event movie_time_sec
+      ↓
+find matching cleaned_watchlog.pts
+      ↓
+if duplicate PTS from a pause:
+    choose the SECOND match
+      ↓
+cleaned_watchlog.neural_recording_time / 1000
+      ↓
+P001 neural_time_sec</pre>
+<p>Rewind나 forward jump는 explicit playback segment boundary로 나누며, 해당 movie PTS가 없는 event는 <code>skipped</code> 또는 <code>out_of_coverage</code>로 남깁니다. 이 path는 <code>annotations_patient_aligned.entry_index</code>나 row order를 identity로 쓰지 않습니다.</p>
+</section>
+
+<section><h2>4. 둘이 “같은 방법”인가?</h2>
+<table>
+<thead><tr><th></th><th>Original Figure 7</th><th>Our P001</th></tr></thead>
+<tbody>
+<tr><td>Event source</td><td><code>annotations_patient_aligned</code></td><td>public base/canonical event</td></tr>
+<tr><td>Subject timing</td><td>precomputed <code>aligned_labels.npy</code> → patient-aligned onset</td><td>canonical movie PTS → <code>cleaned_watchlogs</code> lookup</td></tr>
+<tr><td>Watchlog route</td><td>paper says patient-aligned annotations reflect <b>raw watchlog</b></td><td><b>cleaned watchlog</b></td></tr>
+<tr><td>Identity</td><td>subject-local aligned rows; entry index regenerated</td><td>stable canonical event ID + playback occurrence</td></tr>
+<tr><td>Pause duplicate convention</td><td>upstream patient alignment not fully public; official binning code elsewhere selects second duplicate PTS</td><td>explicitly selects second duplicate PTS</td></tr>
+<tr><td>Analysis onset</td><td>stored patient-aligned neural onset</td><td>re-derived neural onset from clean watchlog</td></tr>
+</tbody></table>
+<div class="warn"><b>따라서 답은 “아니다”입니다.</b> 두 path는 related synchronization evidence를 사용하지만 timestamp를 만드는 computational path는 동일하지 않습니다.</div>
+</section>
+
+<section><h2>5. P006 Phase A가 실제로 무엇을 했나?</h2>
+<p>P006은 original patient-aligned timing과 P001 timing을 바로 빼지 않았습니다. 먼저 동일한 event identity를 찾으려고 다음 reverse crosswalk을 시도했습니다.</p>
+<pre>annotations_patient_aligned.start_time
+        │
+        │ nearest neural timestamp within 20 ms
+        ▼
+cleaned_watchlog row
+        │
+        ├─ inferred movie PTS
+        └─ inferred playback segment
+        │
+        ▼
+search P001 occurrence with:
+same subject
+same event type
+same playback segment
+movie PTS within ±20 ms
+        │
+        ▼
+ONLY if exactly one candidate:
+compute residual = P001_time - patient_aligned_time</pre>
+<div class="key">즉 nearest cleaned-watchlog row는 <b>identity 자체가 아니라 evidence locator</b>일 뿐입니다. P006은 그것만으로 같은 event라고 선언하지 않도록 일부러 fail-closed하게 설계되었습니다.</div>
+</section>
+
+<section><h2>6. P006 결과를 숫자로 읽기</h2>
+<div class="grid">
+<div class="card"><div class="metric">32,234</div><div>patient-aligned positive Camera/Scene rows</div></div>
+<div class="card"><div class="metric">31,578</div><div>patient onset에서 20 ms 이내 unique cleaned-watchlog locator가 있던 rows</div></div>
+<div class="card"><div class="metric">656</div><div>20 ms 이내 watchlog locator 자체가 없던 rows</div></div>
+<div class="card"><div class="metric">0</div><div>uniquely justified P001 ↔ patient-aligned pairs</div></div>
+</div>
+<p>따라서 residual summary는 비어 있습니다.</p>
+<div class="eq">No unique identity → no valid Δtime → no claim about timing error</div>
+</section>
+
+<section><h2>7. Row count만으로도 두 table의 semantics가 다르다는 단서</h2>
+<p>Base transition inventory에는 Camera Cut 958개와 Scene Cut 133개, 총 <b>1,091 canonical annotation rows</b>가 있습니다.</p>
+<div class="eq">1,091 × 29 subjects = 31,639 theoretical one-per-subject rows</div>
+<table><thead><tr><th>Table/path</th><th>Rows</th><th>해석</th></tr></thead>
+<tbody>
+<tr><td>Theoretical one canonical event × subject</td><td>31,639</td><td>모든 event가 정확히 한 번씩 present한다고 가정</td></tr>
+<tr><td>P001/watchlog mapped occurrences</td><td>31,155</td><td>464 skipped + 20 out-of-coverage</td></tr>
+<tr><td>Patient-aligned positive rows</td><td>32,234</td><td>theoretical count보다 595개 많음</td></tr>
+</tbody></table>
+<p>이 차이는 <code>annotations_patient_aligned</code>가 canonical row를 단순히 subject clock으로 옮긴 one-to-one table이 아니라는 강한 단서입니다. Pause/replay/skip/segment splitting 등의 alignment semantics가 row count에 반영되었을 수 있습니다.</p>
+</section>
+
+<section><h2>8. 가장 가능성 높은 discrepancy 원인들</h2>
+<div class="grid">
+<div class="card rank1"><span class="tag">High priority</span><h3>A. Raw vs cleaned watchlog path</h3><p>Original patient-aligned annotations는 raw playback history를 반영한다고 문서화되어 있지만, P001은 cleaned watchlog의 exact PTS lookup으로 neural time을 만듭니다. 같은 synchronization family라도 pause/seek 주변에서는 동일한 mapping이라고 가정할 수 없습니다.</p></div>
+<div class="card rank1"><span class="tag">High priority</span><h3>B. Missing upstream aligned-label generator</h3><p>Public repo는 <code>aligned_labels.npy</code>를 <b>load</b>하지만 그것을 어떻게 생성했는지 보여주지 않습니다. 따라서 event splitting, interpolation, duplicate handling, frame-edge convention을 완전히 audit할 수 없습니다.</p></div>
+<div class="card rank1"><span class="tag">High priority</span><h3>C. Identity semantics differ</h3><p>Patient-aligned <code>entry_index</code>는 alignment 이후 다시 생성됩니다. Row order와 entry index는 base-event identity가 아닙니다. P006의 0 unique pairs는 바로 이 identity gap을 드러냅니다.</p></div>
+<div class="card rank2"><span class="tag">Plausible</span><h3>D. 20/40-ms frame convention shift</h3><p>Frame start vs frame center, 0-based vs 1-based frame, “first frame of new segment”의 해석 차이는 20–40 ms systematic offset을 만들 수 있습니다. 현재 ±20 ms matching이면 한 frame(40 ms) shift만 있어도 전부 unmatched가 될 수 있습니다.</p></div>
+<div class="card rank2"><span class="tag">Plausible</span><h3>E. Pause/replay row duplication or splitting</h3><p>Patient-aligned positive row count가 canonical×subject보다 많다는 점과 잘 맞습니다. 같은 canonical transition이 alignment 과정에서 여러 aligned intervals로 표현될 가능성을 확인해야 합니다.</p></div>
+<div class="card rank3"><span class="tag">Separate issue</span><h3>F. Isolation rules differ</h3><p>Original Figure 7은 같은 label의 이전 positive interval과 1초 이상 떨어진 onset을 사용합니다. 우리 primary isolation은 모든 distinct physical transition에 대해 two-sided 1 s isolation을 사용합니다. 이는 <b>event subset</b>을 바꾸지만, 기본 timestamp 생성 차이와는 별 문제입니다.</p></div>
+</div>
+</section>
+
+<section><h2>9. 무엇은 오히려 가능성이 낮아 보이나?</h2>
+<div class="good"><b>Gross unit/clock catastrophe는 현재 evidence와 잘 맞지 않습니다.</b> 32,234 patient rows 중 31,578은 patient-aligned neural onset에서 20 ms 이내에 unique cleaned-watchlog neural timestamp가 있습니다. 즉 seconds-vs-milliseconds 같은 대규모 unit error나 수초 수준의 global clock shift가 모든 row에 존재하는 그림은 아닙니다.</div>
+<p>하지만 “neural time이 가까운 watchlog row가 존재한다”와 “그 row가 동일한 canonical cut의 movie frame이다”는 다른 주장입니다. 현재 문제는 후자입니다.</p>
+</section>
+
+<section><h2>10. 다음에 가장 먼저 해야 할 diagnostic</h2>
+<div class="card"><h3>Test 1 — movie-time offset histogram, identity claim 없이</h3><p>각 patient-aligned row에서 nearest cleaned-watchlog row로 얻은 movie PTS와, 같은 event type의 nearest canonical event movie time 차이를 계산합니다. ±20 ms에서 match를 강제하지 말고 ±200 ms 정도를 <b>diagnostic only</b>로 보고 40 ms multiples에 peak가 있는지 확인합니다.</p><pre>Δmovie = inferred_movie_pts_from_patient_time
+       − nearest_same_type_canonical_event_time
+
+Look for peaks at:
+0 ms, ±20 ms, ±40 ms, ±80 ms, ...</pre></div>
+<div class="card"><h3>Test 2 — subject/type count reconciliation</h3><p>각 subject에서 Camera/Scene patient-aligned positive rows와 canonical occurrences 수를 비교하고, excess/deficit이 pause, jump, segment boundary 근처에 집중되는지 봅니다.</p></div>
+<div class="card"><h3>Test 3 — raw-watchlog reconstruction</h3><p>가능하면 public <code>raw_watchlogs</code>와 base annotations로 patient-aligned onset을 독립 재구성합니다. Public generator가 없기 때문에 exact reproduction이 어려울 수 있지만, raw-vs-clean timing divergence가 어디서 생기는지 확인하는 가장 직접적인 방법입니다.</p></div>
+<div class="card"><h3>Test 4 — frame convention sweep</h3><p>canonical event time을 −40, −20, 0, +20, +40 ms shifting한 diagnostic crosswalk을 만들어 candidate count가 급증하는지 봅니다. 이 결과는 timestamp를 수정하기 위한 것이 아니라 <b>off-by-one / frame-edge hypothesis를 진단</b>하기 위한 것입니다.</p></div>
+</section>
+
+<section><h2>11. 그 다음에야 timing residual을 계산할 수 있다</h2>
+<pre>Step A
+Establish SAME EVENT identity
+        ↓
+Step B
+Compare timestamps for that same event
+        ↓
+Δt = P001 neural time − original patient-aligned neural time
+        ↓
+Step C
+Look at median / MAD / drift / tails
+        ↓
+Step D
+Only then test whether neural conclusions change</pre>
+<div class="warn">현재는 Step A에서 멈춰 있습니다. 따라서 지금 P001 timestamps를 shift하거나 event를 drop하면 안 됩니다.</div>
+</section>
+
+<section><h2>12. Original replication과 우리 analysis를 함께 보려면</h2>
+<div class="two">
+<div class="card"><h3>Original-positive-control path</h3><p><code>annotations_patient_aligned</code> timestamps를 그대로 사용하여 Figure 7/ZETA를 method-compatible하게 reproduce합니다. 이것은 original timing representation이 public NWB에서 작동한다는 positive control입니다.</p></div>
+<div class="card"><h3>Canonical research path</h3><p>Stable canonical event → cleaned watchlog → P001 timing을 사용합니다. 이 path는 sensory/structural/context predictors와 stable event identity를 연결하기 위해 설계되었습니다.</p></div>
+</div>
+<p>두 path가 같은 responsive-unit count를 대략 reproduce하면서도 event-by-event time이 완전히 동일하지 않을 수 있습니다. 반대로 둘이 systematic 40 ms shift를 갖더라도 1 s ZETA response count는 크게 달라지지 않을 수 있습니다. 그래서 <b>population-level replication과 event-level identity/timing equivalence는 별도 검증</b>이어야 합니다.</p>
+</section>
+
+<section><h2>13. 기억할 핵심 5문장</h2>
+<ol>
+<li>Original Figure 7은 <code>annotations_patient_aligned.start_time</code>을 직접 사용한다.</li>
+<li>우리 P001은 canonical movie event를 <code>cleaned_watchlogs</code>에 다시 매핑해서 neural time을 만든다.</li>
+<li>따라서 두 timing path는 related하지만 동일하지 않다.</li>
+<li>P006의 0 unique pairs는 timing residual이 0이 아니라, <b>residual을 계산할 identity가 0개</b>라는 뜻이다.</li>
+<li>다음 우선순위는 timestamp를 수정하는 것이 아니라 <b>identity gap과 possible 20/40-ms frame convention 차이를 진단</b>하는 것이다.</li>
+</ol>
+</section>
+
+<section class="sources"><h2>14. Source trail</h2>
+<p><b>Original SUMMER paper:</b> <a href="https://www.nature.com/articles/s41597-026-07955-0">Scientific Data (2026), Human neuron activity during an 83-minute movie...</a></p>
+<p><b>Official SUMMER code:</b> <a href="https://github.com/mormannlab/SUMMER">mormannlab/SUMMER</a>, especially <code>nwb_generation/write_nwb.py</code>, <code>visualization/plot_code/nwb_io.py</code>, and <code>responsive_units/utils/calc_responsive_units.py</code>.</p>
+<p><b>Our repo:</b> P006 <code>reports/P006_TIMING_AUDIT.md</code>, <code>src/topic_1_timing_audit.py</code>, <code>src/topic_1_alignment.py</code>, and <code>src/tab09.py</code> on branch <code>p003-stage-e-preflight-review</code>.</p>
+</section>
+
+<footer style="margin:60px 0 20px;color:#8fa1be">06 · Timing Alignment study guide. This page distinguishes identity resolution from timing residual estimation; it does not alter any frozen event timestamp or model result.</footer>
+</div></body></html>

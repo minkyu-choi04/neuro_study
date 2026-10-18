@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="P006 timing audit 시각 학습 06A: 원본 patient-aligned events와 P001의 두 가지 timing 검증을 구분합니다.">
+<title>06A — Timing 검증의 두 축 | Neuro Study</title><link rel="stylesheet" href="p006_timing_visual.css"></head>
+<body><div class="shell">
+<nav class="nav" aria-label="Study navigation"><a href="study_index.html">← 전체 Index</a><a href="timing_alignment_original_vs_repo.html">기존 06 해설</a><a class="active" href="p006_timing_01_overview.html">06A 전체 지도</a><a href="p006_timing_02_event_identity.html">06B Event identity</a><a href="p006_timing_03_dual_clock.html">06C Dual clock</a><a href="p006_timing_04_status.html">06D 현재 결과</a></nav>
+<header><div class="eyebrow">P006 Timing Study · 06A / 06D</div><h1>우리는 정확히<br>어떤 두 시간을 검증하는가?</h1>
+<p class="lead">말씀하신 두 가지 검증은 <strong>큰 방향에서 모두 맞습니다.</strong> 그러나 첫 번째는 단순한 timestamp 차이가 아니라 먼저 <b>동일한 영화 컷(event identity)</b>인지 확인하는 문제입니다. 두 번째는 영화와 뇌 기록이 서로 다른 clock을 쓰므로 그 연결과 연속성을 확인하는 문제입니다.</p></header>
+<div class="key"><strong>핵심 정정</strong> — “원 논문 데이터 vs 내가 다운로드한 데이터”는 독립적으로 수집된 두 데이터가 아닙니다. Original 연구가 배포한 <code>NWB</code> 안에 <code>annotations_patient_aligned</code>가 이미 들어 있고, 우리 P001은 같은 릴리스의 <code>annotations_base</code>와 <code>cleaned_watchlogs</code>로 별도 timing path를 재구성합니다.</div>
+<section><h2>한눈에 보는 두 verification</h2>
+<div class="diagram"><h3>한 번의 movie cut에서 두 가지 질문이 생긴다</h3><div class="svgscroll">
+<svg class="viz" viewBox="0 0 1080 570" role="img" aria-label="영화 컷에서 원본 환자별 event time 경로와 우리 P001 경로가 분기하고, event identity 비교와 movie-neural clock mapping 검증이 서로 다른 질문임을 나타낸 흐름도">
+<defs><marker id="ar-c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10" fill="none" stroke="#83baff" stroke-width="1.7"/></marker></defs>
+<rect x="342" y="14" width="396" height="64" rx="13" class="box"/><text x="540" y="40" class="label" text-anchor="middle">영화 속 physical transition</text><text x="540" y="60" class="muted" text-anchor="middle">예: Scene A → Scene B · movie PTS</text>
+<path d="M540 78V99H272V119 M540 99H809V119" stroke="#83baff" fill="none" stroke-width="2.5" marker-end="url(#ar-c)"/>
+<rect x="28" y="123" width="483" height="128" rx="14" fill="#222441" stroke="#c6a4ff" stroke-width="2"/>
+<text x="267" y="151" class="label" text-anchor="middle">원본 연구의 event onset</text>
+<text x="267" y="180" class="muted" text-anchor="middle">annotations_patient_aligned</text>
+<text x="267" y="207" class="muted" text-anchor="middle">subject별 neural timestamp</text>
+<text x="267" y="230" class="micro" text-anchor="middle">upstream aligned_labels 생성 규칙은 완전 공개되지 않음</text>
+<rect x="568" y="123" width="483" height="128" rx="14" fill="#173b38" stroke="#6de8d6" stroke-width="2"/>
+<text x="810" y="151" class="label" text-anchor="middle">우리 P001의 event onset</text>
+<text x="810" y="180" class="muted" text-anchor="middle">canonical event → cleaned_watchlogs</text>
+<text x="810" y="207" class="muted" text-anchor="middle">subject별 neural timestamp</text>
+<text x="810" y="230" class="micro" text-anchor="middle">movie PTS가 watchlog의 어떤 row에 대응하는가?</text>
+<path d="M267 251V288H535 M810 251V288H545" stroke="#83baff" stroke-width="2.3" fill="none" marker-end="url(#ar-c)"/>
+<rect x="188" y="310" width="704" height="77" rx="13" fill="#182d48" stroke="#ffd07c" stroke-width="2"/>
+<text x="540" y="339" class="label orange" text-anchor="middle">검증 A · SAME EVENT인가?</text>
+<text x="540" y="366" class="muted" text-anchor="middle">subject · type · frame · segment · playback occurrence → 그 다음 Δt 비교</text>
+<rect x="188" y="418" width="704" height="110" rx="13" fill="#152d40" stroke="#6de8d6" stroke-width="2"/>
+<text x="540" y="448" class="label cyan" text-anchor="middle">검증 B · MOVIE ↔ NEURAL clock은 유효한가?</text>
+<text x="540" y="476" class="muted" text-anchor="middle">frame PTS ↔ cleaned watchlog neural time</text>
+<text x="540" y="499" class="muted" text-anchor="middle">pause / resume / seek / clock drift / recording gap / window continuity</text>
+<path d="M540 387V414" stroke="#83baff" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ar-c)"/>
+</svg></div><p class="caption">개념도. 비교 A와 B는 관련되어 있지만, 서로를 대신 증명하지는 않습니다. 영화와 신경 기록 사이의 직접적인 외부 ground truth를 뜻하지 않습니다.</p></div>
+<div class="grid2">
+<a class="card" style="text-decoration:none;color:inherit;border-color:#8e75be" href="p006_timing_02_event_identity.html"><span class="tag purple">A · Event identity</span><h3 style="margin-top:13px">“이 컷이 동일한 컷인가?”</h3><p>같은 cut을 두 path에서 정확히 짝지은 뒤, 각 subject의 event-onset neural time을 비교합니다.</p><b style="color:var(--purple)">06B에서 그림으로 보기 →</b></a>
+<a class="card" style="text-decoration:none;color:inherit;border-color:#368f85" href="p006_timing_03_dual_clock.html"><span class="tag cyan">B · Clock mapping</span><h3 style="margin-top:13px">“영화 1초는 neural clock 어디인가?”</h3><p>재생 중 정지·탐색·재개를 반영한 movie–neural correspondence 및 event window의 연속성을 확인합니다.</p><b style="color:var(--cyan)">06C에서 그림으로 보기 →</b></a></div>
+</section>
+<section><h2>세 가지 clock을 혼동하지 않기</h2>
+<div class="diagram"><h3>각 clock의 역할</h3><div class="svgscroll">
+<svg class="viz" viewBox="0 0 1040 295" role="img" aria-label="movie PTS가 laptop presentation clock을 통해 neural acquisition clock으로 연결되는 계층과 공개 파일을 나타내는 그림">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10" fill="none" stroke="#83baff" stroke-width="2"/></marker></defs>
+<rect x="10" y="39" width="296" height="164" rx="15" fill="#142b40" stroke="#6de8d6" stroke-width="2"/>
+<text x="158" y="77" class="label" text-anchor="middle">1 · Movie clock</text><text x="158" y="107" class="muted" text-anchor="middle">PTS · 25 fps → 40 ms/frame</text><text x="158" y="144" class="muted" text-anchor="middle">“영화의 몇 번째 프레임?”</text><text x="158" y="183" class="micro" text-anchor="middle">annotations_base, canonical</text>
+<rect x="372" y="39" width="296" height="164" rx="15" fill="#192941" stroke="#ffd07c" stroke-width="2"/>
+<text x="520" y="77" class="label" text-anchor="middle">2 · Presentation clock</text><text x="520" y="107" class="muted" text-anchor="middle">실험 laptop의 재생 시간</text><text x="520" y="144" class="muted" text-anchor="middle">pause해도 real time 진행</text><text x="520" y="183" class="micro" text-anchor="middle">paper의 raw playback / TTL 경로</text>
+<rect x="735" y="39" width="296" height="164" rx="15" fill="#25223e" stroke="#c6a4ff" stroke-width="2"/>
+<text x="883" y="77" class="label" text-anchor="middle">3 · Neural clock</text><text x="883" y="107" class="muted" text-anchor="middle">뇌 전기 기록의 시간축</text><text x="883" y="144" class="muted" text-anchor="middle">spikes·원본 aligned labels</text><text x="883" y="183" class="micro" text-anchor="middle">neural_recording_time</text>
+<path d="M308 114H368" stroke="#83baff" stroke-width="2.5" marker-end="url(#arrow)"/><path d="M670 114H731" stroke="#83baff" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="520" y="240" class="muted" text-anchor="middle">다운로드한 cleaned_watchlogs에는 movie PTS와 neural_recording_time이 같은 row에 저장됨</text>
+<text x="520" y="264" class="micro" text-anchor="middle">하지만 두 값이 맞게 생성되었는지는 watchlog만 보고 독립적으로 증명할 수 없음</text>
+</svg></div></div>
+</section>
+<section><h2>“Frame by frame for each subject”는 어느 검증인가?</h2>
+<p>두 검증 모두 subject-specific입니다. <b>A에서는</b> 각 movie cut에 canonical ID를 붙인 뒤 환자별 playback occurrence와 원본 patient-aligned event가 같은 장면인지 확인합니다. <b>B에서는</b> 원본 movie frame의 PTS가 환자별 neural recording time과 어떻게 대응되는지, 재생이 끊긴 구간에서는 불연속이 정확히 기록되었는지 확인합니다.</p>
+<div class="note">추가로 <strong>실제 영상 픽셀에서 컷이 발생한 프레임</strong>을 독립 검증하려면 stimulus 원본 영상의 frame-by-frame inspection도 필요할 수 있습니다. 이것은 A의 annotation provenance에 관한 별도 확인이며, P006 v004만으로 완성한 검증은 아닙니다.</div>
+<div class="grid3">
+<div class="card"><div class="tag purple">A</div><div class="bigstat purple">OPEN</div><p>환자별 원본 event ↔ P001 event의 accepted identity = 0</p></div>
+<div class="card"><div class="tag cyan">B</div><div class="bigstat">QC 있음</div><p>3,553,454 clock steps를 분류했으나 verified dual-clock은 아직 없음</p></div>
+<div class="card"><div class="tag orange">P006 v004</div><div class="bigstat" style="color:var(--orange)">STOP</div><p>진단 패키지 완료. Timing rule 수정이나 model rerun은 승인되지 않음</p></div></div>
+</section>
+<div class="page-links"><a href="p006_timing_02_event_identity.html">다음 06B → 동일 event인지 확인하는 방법</a><a href="p006_timing_03_dual_clock.html">06C → 두 clock과 pause/resume</a><a href="p006_timing_04_status.html">06D → v004 수치와 미해결 이유</a><a href="timing_alignment_original_vs_repo.html">기존 06 → 상세 technical background</a></div>
+<footer class="footer">Neuro Study · Topic 01 / P006 · 다이어그램의 시간 및 예시는 설명용이며 실제 patient data가 아닙니다. Source: neuro_mtl_summer P006 A3 v004 report, DEC-025, SUMMER NWB source paths.</footer>
+</div></body></html>

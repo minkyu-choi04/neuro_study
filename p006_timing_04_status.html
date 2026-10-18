@@ -1,0 +1,66 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>06D — P006 A3 v004 Result and Remaining Gaps | Neuro Study</title><link rel="stylesheet" href="p006_timing_visual.css"></head>
+<body><div class="shell"><nav class="nav" aria-label="Study navigation"><a href="study_index.html">← Index</a><a href="p006_timing_01_overview.html">06A 전체 지도</a><a href="p006_timing_02_event_identity.html">06B Event identity</a><a href="p006_timing_03_dual_clock.html">06C Dual clock</a><a class="active" href="p006_timing_04_status.html">06D 현재 결과</a></nav>
+<header><div class="eyebrow">06D · P006 Phase A3 v004 · 2026-10-18</div><h1>검사를 많이 했는데<br>왜 아직 timing verification이 완료되지 않았을까?</h1><p class="lead">v004 <b>production·validation·provenance 전달은 완료</b>되었습니다. 그러나 이것과 <b>연구에 사용할 timestamp의 타당성 확정</b>은 서로 다른 주장입니다.</p></header>
+<div class="grid3"><div class="card"><span class="tag cyan">Computational delivery</span><div class="bigstat">DONE</div><p>새 결과 패키지, manifest/provenance 및 보고서 게시. 소스 attestation·validation PASS로 보고됨.</p></div><div class="card"><span class="tag red">Verification A</span><div class="bigstat red">OPEN</div><p>원본 patient event와 P001 사이의 accepted event identity 없음.</p></div><div class="card"><span class="tag orange">Verification B</span><div class="bigstat" style="color:var(--orange)">PARTIAL</div><p>clock step과 window QC를 분류했지만 independent dual-clock truth 미확보.</p></div></div>
+<section><h2>1. P006은 어디서 멈췄나?</h2>
+<div class="diagram"><h3>Event identity matching funnel</h3><div class="svgscroll"><svg class="viz" viewBox="0 0 1050 480" role="img" aria-label="32234개의 original patient event가 31578개의 근접 watchlog locator와 656개의 locator 없는 이벤트로 나뉘지만 최종 accepted event identity는 0개인 funnel">
+<rect x="105" y="14" width="836" height="91" rx="14" fill="#28223d" stroke="#c6a4ff" stroke-width="2"/><text x="522" y="54" class="num" text-anchor="middle">32,234</text><text x="522" y="82" class="muted" text-anchor="middle">Original patient-aligned positive Camera / Scene rows</text>
+<path d="M525 105V130H289V151 M525 130H778V151" fill="none" stroke="#83baff" stroke-width="2.4"/>
+<rect x="32" y="157" width="529" height="105" rx="14" fill="#162d40" stroke="#82baff" stroke-width="2"/>
+<text x="296" y="203" class="num" text-anchor="middle">31,578</text><text x="296" y="235" class="muted" text-anchor="middle">20 ms 안의 유일한 가까운 watchlog locator</text>
+<rect x="596" y="157" width="422" height="105" rx="14" fill="#39252c" stroke="#ff9da5" stroke-width="2"/>
+<text x="807" y="203" class="num" text-anchor="middle">656</text><text x="807" y="235" class="muted" text-anchor="middle">20 ms 안의 locator 없음</text>
+<path d="M296 262V305" stroke="#83baff" stroke-width="2.4"/>
+<rect x="106" y="317" width="835" height="125" rx="14" fill="#2b222f" stroke="#ff9da5" stroke-width="2.3"/>
+<text x="524" y="364" class="num red" text-anchor="middle">0 accepted identities</text>
+<text x="524" y="394" class="muted" text-anchor="middle">subject + event type + segment + movie PTS ±20ms + unique support</text>
+<text x="524" y="420" class="muted" text-anchor="middle">→ 따라서 paired neural onset Δt 분포도 아직 없음</text>
+</svg></div></div>
+<div class="note"><strong>오해 방지:</strong> “31,578개가 matched”가 아닙니다. 31,578개는 watchlog 안에서 <em>가까운 clock row를 찾은 것</em>입니다. 그 row가 P001의 동일한 physical cut이라는 objective proof는 없습니다.</div>
+</section>
+<section><h2>2. 무엇이 evidence이고 무엇은 결론이 아닌가?</h2>
+<div class="diagram"><h3>v004 findings / claims separation</h3><div class="svgscroll"><svg class="viz" viewBox="0 0 1050 347" role="img" aria-label="v004의 확인된 진단 정보 세 묶음과 아직 불가능한 결론을 좌우로 나눠 정리한 그림">
+<rect x="12" y="18" width="490" height="310" rx="15" fill="#17312f" stroke="#6de8d6" stroke-width="2"/>
+<rect x="546" y="18" width="490" height="310" rx="15" fill="#32252f" stroke="#ff9da5" stroke-width="2"/>
+<text x="257" y="54" class="label cyan" text-anchor="middle">현재 source / derived evidence</text>
+<text x="789" y="54" class="label red" text-anchor="middle">아직 말할 수 없는 것</text>
+<g class="muted"><text x="40" y="102">✓ source annotation 1,091개 후보 coverage</text><text x="40" y="143">✓ watchlog step 3,553,454개 분류</text><text x="40" y="184">✓ pauses 74 · forward seeks 7</text><text x="40" y="225">✓ nominal-step large gap 1</text><text x="40" y="266">✓ frozen q0 identity exposure 집계</text>
+<text x="570" y="102">✕ 원본 ↔ P001 event가 확실히 일치</text><text x="570" y="143">✕ 모든 event onset이 40ms 틀림</text><text x="570" y="184">✕ 전체 sync 정확도가 독립 입증됨</text><text x="570" y="225">✕ 모든 original window가 깨끗함</text><text x="570" y="266">✕ 수정/제외가 과학적으로 승인됨</text></g>
+</svg></div></div>
+<p>v004의 <code>validation.json</code>은 <code>verified_dual_clock_available: false</code>이며, 결과 status는 <code>UNRESOLVED_ALIGNMENT_IDENTITY</code>입니다. 이는 timestamp가 “0 ms 차이”라는 뜻도, “틀렸다”는 뜻도 아닙니다.</p>
+</section>
+<section><h2>3. P006 v004 숫자를 어떻게 해석해야 하나?</h2>
+<div class="grid2">
+<div class="card"><div class="tag purple">Canonical source</div><div class="bigstat purple">1,091</div><p>서로 다른 label-based movie annotation row의 수. 970 physical transitions에 camera와 scene cut이 일부 동시 발생하기 때문에 row와 physical event 수는 다릅니다.</p></div>
+<div class="card"><div class="tag cyan">Window QC input</div><div class="bigstat">28,110</div><p>v004가 QC한 mapped physical occurrences. 32,234 patient-positive rows와 다른 모집단입니다.</p></div>
+<div class="card"><div class="tag orange">q0 identity-only</div><div class="bigstat" style="color:var(--orange)">1,005,458</div><p>frozen identity manifest의 neuron × event rows. 24,503 mapped occurrences 기반으로 집계하며 실제 held-out ΔLL observation 수를 뜻하지 않습니다.</p></div>
+<div class="card"><div class="tag purple">P003 paired held-out</div><div class="bigstat purple">594,146</div><p>이전 M0/M1 비교의 paired score row 수. q0 identity-only exposure의 1,005,458과 분모가 다릅니다.</p></div></div>
+<div class="warn"><b>중복 집계 주의:</b> v004의 window transition 421,650은 28,110 occurrences × 3개 window × 5개 descriptive threshold의 집계입니다. 421,650개의 서로 다른 컷이나 환자를 뜻하지 않습니다.</div>
+</section>
+<section><h2>4. 아직 완료되지 않은 이유 — 두 개의 빈 칸</h2>
+<div class="diagram"><h3>필요한 evidence가 missing인 정확한 위치</h3><div class="svgscroll"><svg class="viz" viewBox="0 0 1070 457" role="img" aria-label="원본과 P001 타임스탬프를 연결하려면 objective identity evidence가 필요하고, movie와 neural clock을 검증하려면 raw presentation 및 TTL ground truth가 필요하다는 두 개의 missing bridge">
+<rect x="24" y="22" width="478" height="394" rx="18" fill="#24243b" stroke="#c6a4ff" stroke-width="2"/><rect x="551" y="22" width="495" height="394" rx="18" fill="#1c313a" stroke="#6de8d6" stroke-width="2"/>
+<text x="263" y="56" class="label purple" text-anchor="middle">A · Original event ↔ P001</text><text x="798" y="56" class="label cyan" text-anchor="middle">B · Movie clock ↔ Neural clock</text>
+<rect x="86" y="91" width="350" height="62" rx="10" fill="#2b304b"/><text x="261" y="129" class="label" text-anchor="middle">Original patient-aligned row</text>
+<rect x="612" y="91" width="374" height="62" rx="10" fill="#1f4350"/><text x="799" y="129" class="label" text-anchor="middle">cleaned_watchlogs PTS ↔ neural</text>
+<path d="M261 157V262 M799 157V262" fill="none" stroke="#ff9da5" stroke-dasharray="8 7" stroke-width="3"/>
+<rect x="75" y="186" width="372" height="84" rx="11" fill="#402933" stroke="#ff9da5" stroke-width="2"/>
+<rect x="594" y="186" width="412" height="84" rx="11" fill="#402933" stroke="#ff9da5" stroke-width="2"/>
+<text x="261" y="217" class="label red" text-anchor="middle">MISSING BRIDGE A</text><text x="261" y="243" class="muted" text-anchor="middle">객관적인 source → canonical ID 증명</text>
+<text x="800" y="217" class="label red" text-anchor="middle">MISSING BRIDGE B</text><text x="800" y="243" class="muted" text-anchor="middle">독립적인 presentation / TTL 근거</text>
+<rect x="86" y="301" width="350" height="72" rx="10" fill="#2b304b"/><text x="261" y="328" class="label" text-anchor="middle">P001 canonical + occurrence</text><text x="261" y="351" class="muted" text-anchor="middle">→ paired Δt 아직 산출 불가</text>
+<rect x="612" y="301" width="374" height="72" rx="10" fill="#1f4350"/><text x="799" y="328" class="label" text-anchor="middle">verified dual-clock & validity</text><text x="799" y="351" class="muted" text-anchor="middle">→ 공식 tolerance 미확정</text>
+</svg></div></div>
+<p>첫 번째 bridge는 original `aligned_labels.npy` 생성 경로나 독립적으로 확인 가능한 source-frame identity가 필요합니다. 두 번째 bridge는 처리된 watchlog만 보는 것에서 벗어나 raw frame presentation과 TTL/acquisition 변환의 근거가 필요합니다. 이 자료가 공개되지 않았다면 불확실성을 명시한 채 연구 설계를 제약해야 합니다.</p>
+<div class="note"><strong>코드 해석의 추가 제한:</strong> A3의 source-convention 함수는 optional `objective_identity_evidence`를 지원하지만 실제 v004 run에서는 넘겨주지 않았습니다. “source-supported proposals = 0”은 objective correspondence 부재의 독립적인 경험적 증명이 아닙니다.</div>
+</section>
+<section><h2>5. 앞으로 어떤 순서로 마무리할까?</h2>
+<div class="card"><div class="step"><div class="number">1</div><div><b>이미 수집한 QC 결과를 이해 가능한 exposure 수치로 요약</b><p>v004 evidence에서 subject × event × primary folds(1/2/3) 기준, pause/seek/gap와 baseline/post/raster의 교집합을 재집계. 모델 fitting 불필요.</p></div></div>
+<div class="step"><div class="number">2</div><div><b>Source-level event identity를 독립 검증할 수 있는 자료 탐색</b><p>원본 aligned-label 생성 규칙, frame indexing, annotation identity, replay provenance. 단순 nearest ±40ms 확대는 금지.</p></div></div>
+<div class="step"><div class="number">3</div><div><b>동일 event가 검증되는 경우에만 paired Δt 계산</b><p>subject, type, segment, drift, tails를 포함한 signed onset residual을 보고. 불가능하면 unresolved를 기록하고 overclaim하지 않음.</p></div></div>
+<div class="step"><div class="number">4</div><div><b>과학적 rule 또는 다음 phase는 별도 승인</b><p>event retiming, clock tolerance, neural timing sensitivity, Figure 7, M0/M1 refit은 P006 A3 승인에 포함되지 않음.</p></div></div></div></section>
+<section><h2>Sources · 현재 결과의 원본</h2><p>메인 근거는 <a href="https://github.com/minkyu-choi04/neuro_mtl_summer/blob/p006-a3-v004-production-review/reports/P006_PHASE_A3_FRAME_CONVENTION_CLOCK_QC_V004.md">P006 A3 v004 report</a>, <a href="https://github.com/minkyu-choi04/neuro_mtl_summer/blob/p006-a3-v004-production-review/data_derived/topic_1_timing_audit_v004/validation.json">validation.json</a>, <a href="https://github.com/minkyu-choi04/neuro_mtl_summer/blob/p006-a3-v004-production-review/data_derived/topic_1_timing_audit_v004/provenance.json">provenance.json</a>, <a href="https://github.com/minkyu-choi04/neuro_mtl_summer/blob/p006-a3-v004-production-review/decisions/DEC-025-topic1-timing-audit-figure7-validation.md">DEC-025</a>입니다. Independent review는 게시된 source/report/JSON의 교차 검토이며 29 NWB 전체의 독립 재계산을 뜻하지 않습니다.</p></section>
+<div class="page-links"><a href="p006_timing_01_overview.html">← 06A 전체 지도</a><a href="p006_timing_02_event_identity.html">06B → Event identity</a><a href="p006_timing_03_dual_clock.html">06C → Two clocks</a><a href="timing_alignment_original_vs_repo.html">기존 06 기술 설명</a></div>
+<footer class="footer">Neuro Study · P006 audit explanation based on v004 delivery commit fc61e8aaf7d9806ad336958e6457d3c0abaa740d. No scientific decisions or results were modified by this study page.</footer>
+</div></body></html>

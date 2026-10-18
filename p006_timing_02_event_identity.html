@@ -1,0 +1,66 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>06B — Event identity와 원본 onset 비교 | Neuro Study</title><link rel="stylesheet" href="p006_timing_visual.css"></head>
+<body><div class="shell">
+<nav class="nav" aria-label="Study navigation"><a href="study_index.html">← Index</a><a href="p006_timing_01_overview.html">06A 전체 지도</a><a class="active" href="p006_timing_02_event_identity.html">06B Event identity</a><a href="p006_timing_03_dual_clock.html">06C Dual clock</a><a href="p006_timing_04_status.html">06D 현재 결과</a></nav>
+<header><div class="eyebrow">06B · Verification A · Same event?</div><h1>원본 event와 P001 event가<br>정말 같은 컷인가?</h1><p class="lead">두 시간값을 빼기 전에 <b>어느 영화 컷을 뜻하는지</b> 확정해야 합니다. 같은 영화를 보더라도 환자별 pause, skip, replay 때문에 하나의 canonical cut이 나타나는 횟수와 neural onset은 다를 수 있습니다.</p></header>
+<div class="key"><b>비교 대상:</b> original `annotations_patient_aligned.start_time` (NWB에 기록된 subject별 neural onset) 대 우리 P001의 `canonical movie event → cleaned_watchlogs.pts → neural_recording_time` (subject별 neural onset). 두 수치가 모두 신경 기록 시간축이더라도 <b>동일 event 확인 없이 차이를 구하면 무의미</b>합니다.</div>
+<section><h2>1. 하나의 movie cut이 여러 subject에서 다른 시간을 갖는다</h2>
+<div class="diagram"><h3>Pause가 있어도 event의 movie identity는 같다</h3><div class="svgscroll">
+<svg class="viz" viewBox="0 0 1090 488" role="img" aria-label="영화 내 120초 지점의 동일 cut이 환자 A와 환자 B에서 서로 다른 neural clock 시간에 발생할 수 있음을 보여주는 예시 타임라인">
+<text x="20" y="27" class="muted">공통 movie PTS</text><line x1="240" y1="66" x2="1023" y2="66" class="axis"/>
+<g><rect x="285" y="40" width="126" height="54" rx="8" fill="#2b4d70"/><rect x="424" y="40" width="126" height="54" rx="8" fill="#2b4d70"/><rect x="563" y="40" width="126" height="54" rx="8" fill="#245d59"/><rect x="702" y="40" width="126" height="54" rx="8" fill="#245d59"/><rect x="841" y="40" width="126" height="54" rx="8" fill="#245d59"/></g>
+<text x="348" y="73" class="label" text-anchor="middle">Frame A</text><text x="487" y="73" class="label" text-anchor="middle">Frame B</text><text x="626" y="73" class="label" text-anchor="middle">Frame C</text><text x="765" y="73" class="label" text-anchor="middle">Frame D</text><text x="903" y="73" class="label" text-anchor="middle">Frame E</text>
+<path d="M556 26V120" stroke="#ffd07c" stroke-width="3" stroke-dasharray="6 5"/><text x="563" y="17" class="label orange">같은 cut e</text><text x="565" y="116" class="micro orange">movie PTS = 120.00 s</text>
+<line x1="235" y1="164" x2="1023" y2="164" stroke="#69849f" stroke-width="2"/>
+<text x="17" y="157" class="label">Subject A</text><text x="17" y="179" class="micro">별도 neural clock</text>
+<rect x="236" y="136" width="320" height="45" rx="6" fill="#204a54"/><rect x="556" y="136" width="467" height="45" rx="6" fill="#24475b"/>
+<path d="M556 132V193" stroke="#6de8d6" stroke-width="4"/><text x="565" y="208" class="muted">A의 cut onset = 예: neural 136 s</text>
+<line x1="235" y1="296" x2="1023" y2="296" stroke="#69849f" stroke-width="2"/>
+<text x="17" y="286" class="label">Subject B</text><text x="17" y="310" class="micro">중간에 pause</text>
+<rect x="236" y="266" width="178" height="59" rx="6" fill="#204a54"/><rect x="414" y="266" width="173" height="59" rx="6" fill="#574023"/><rect x="587" y="266" width="165" height="59" rx="6" fill="#204a54"/><rect x="752" y="266" width="271" height="59" rx="6" fill="#24475b"/>
+<text x="501" y="303" class="label orange" text-anchor="middle">PAUSE 15 s</text>
+<path d="M752 258V337" stroke="#c6a4ff" stroke-width="4"/><text x="764" y="354" class="muted">B의 cut onset = 예: neural 151 s</text>
+<path d="M556 195V241H752V259" fill="none" stroke="#83baff" stroke-width="1.6" stroke-dasharray="6 6"/>
+<rect x="194" y="392" width="804" height="69" rx="13" fill="#152d40" stroke="#4c7784"/><text x="596" y="420" class="label" text-anchor="middle">Movie event ID = 같은 e, neural time은 subject마다 다를 수 있음</text><text x="596" y="446" class="muted" text-anchor="middle">그래서 “같은 120초 frame”과 “같은 136초 neural timestamp”는 전혀 다른 조건</text>
+</svg></div><p class="caption"><strong>가상의 시간값</strong>입니다. 실제 SUMMER 환자의 해당 event가 136/151초라는 뜻이 아닙니다. Pause 때문에 subject별 neural onset이 이동할 수 있음을 설명합니다.</p></div>
+</section>
+<section><h2>2. 두 event-onset 경로는 같은 NWB에서 출발하지만 서로 다르다</h2>
+<div class="diagram"><h3>원본 path 대 우리 path</h3><div class="svgscroll">
+<svg class="viz" viewBox="0 0 1090 370" role="img" aria-label="원본 연구의 aligned_labels 경로와 P001의 canonical event/cleaned watchlog 경로를 병렬로 표시한 그림">
+<rect x="21" y="14" width="509" height="323" rx="18" fill="#242139" stroke="#b994ee" stroke-width="2"/>
+<rect x="563" y="14" width="505" height="323" rx="18" fill="#133330" stroke="#6de8d6" stroke-width="2"/>
+<text x="275" y="45" text-anchor="middle" class="label purple">ORIGINAL STUDY</text><text x="815" y="45" text-anchor="middle" class="label cyan">OUR P001</text>
+<g fill="#172b45" stroke="#5c6d88"><rect x="83" y="68" width="383" height="49" rx="9"/><rect x="83" y="153" width="383" height="49" rx="9"/><rect x="83" y="240" width="383" height="49" rx="9"/><rect x="628" y="68" width="373" height="49" rx="9"/><rect x="628" y="153" width="373" height="49" rx="9"/><rect x="628" y="240" width="373" height="49" rx="9"/></g>
+<g class="label" text-anchor="middle"><text x="275" y="99">movie annotation + playback alignment</text><text x="275" y="182">aligned_labels.npy (upstream)</text><text x="275" y="269">annotations_patient_aligned.start_time</text>
+<text x="814" y="99">annotations_base → canonical movie event</text><text x="814" y="182">cleaned_watchlogs.pts match</text><text x="814" y="269">cleaned_watchlogs.neural_recording_time</text></g>
+<g stroke="#83baff" stroke-width="2" fill="none"><path d="M275 117V150"/><path d="M275 202V238"/><path d="M814 117V150"/><path d="M814 202V238"/></g>
+<text x="275" y="318" class="micro" text-anchor="middle">upstream aligned-label generator는 공개 코드만으로 완전히 재구성 불가</text><text x="814" y="318" class="micro" text-anchor="middle">canonical event ID + playback occurrence를 추적</text>
+</svg></div></div>
+<p>Original Figure 7은 <code>annotations_patient_aligned</code>의 positive cut onset을 사용합니다. 우리 P001은 canonical movie time을 <code>cleaned_watchlogs</code>에 다시 매핑합니다. <b>두 path가 똑같은 mapping algorithm이라고 가정해서는 안 됩니다.</b></p>
+</section>
+<section><h2>3. Event identity가 있어야 Δtime을 계산할 수 있다</h2>
+<div class="diagram"><h3>잘못된 matching과 올바른 검증 순서</h3><div class="svgscroll">
+<svg class="viz" viewBox="0 0 1050 370" role="img" aria-label="nearest timestamp만으로 매칭하면 40ms 오프셋을 잘못 추론할 수 있고, event identity를 증명한 후 동일 이벤트 시간차를 계산해야 한다는 그림">
+<text x="24" y="35" class="label">Original subject event rows</text><text x="606" y="35" class="label">P001 canonical × subject rows</text>
+<g fill="#28233c" stroke="#c6a4ff"><rect x="21" y="56" width="420" height="72" rx="12"/><rect x="21" y="159" width="420" height="72" rx="12"/></g>
+<g fill="#17352f" stroke="#6de8d6"><rect x="608" y="56" width="420" height="72" rx="12"/><rect x="608" y="159" width="420" height="72" rx="12"/></g>
+<g class="label"><text x="39" y="84">patient row k: Camera Cut</text><text x="39" y="109" class="muted">neural onset = x</text><text x="39" y="187">patient row k+1: Scene Cut</text><text x="39" y="212" class="muted">neural onset = y</text>
+<text x="630" y="84">canonical e₁: Camera Cut</text><text x="630" y="109" class="muted">movie PTS + occurrence → t₁</text><text x="630" y="187">canonical e₂: Scene Cut</text><text x="630" y="212" class="muted">movie PTS + occurrence → t₂</text></g>
+<path d="M446 93H603" stroke="#ff9da5" stroke-width="3" stroke-dasharray="8 7"/><text x="527" y="78" text-anchor="middle" class="micro red">nearest만으로는</text><text x="527" y="114" text-anchor="middle" class="micro red">identity 불충분</text>
+<path d="M446 197H603" stroke="#ff9da5" stroke-width="3" stroke-dasharray="8 7"/>
+<rect x="185" y="269" width="684" height="74" rx="12" fill="#183047" stroke="#ffd07c" stroke-width="2"/>
+<text x="527" y="299" text-anchor="middle" class="label orange">먼저 independent source/frame/subject/segment identity proof</text>
+<text x="527" y="326" text-anchor="middle" class="muted">그 다음 Δt = t_P001 − t_patient_aligned · signed residual/분포/드리프트</text>
+</svg></div></div>
+<div class="grid2">
+<div class="card"><span class="tag orange">A2 nearest locator</span><div class="bigstat" style="color:var(--orange)">≈ −40 ms</div><p><strong>P001 후보 movie PTS − 환자 onset에서 추정한 watchlog movie PTS</strong>의 약 한 프레임 차이. 같은 사건이 증명된 neural-clock Δt가 아닙니다.</p></div>
+<div class="card"><span class="tag red">V001 accepted identity</span><div class="bigstat red">0 / 32,234</div><p>현재의 엄격한 identity 조건을 통과한 pair가 없어서, 유효한 paired neural timing residual 분포를 계산하지 못했습니다.</p></div></div>
+</section>
+<section><h2>4. v004가 한 것과 하지 못한 것</h2>
+<div class="grid2"><div class="card"><h3>수행한 확인</h3><ul><li>1,091 source annotation row의 canonical 후보 coverage</li><li>29 subjects에서 `annotations_base` source 일관성</li><li>32,234 patient rows의 k−1/k/k+1 watchlog locator evidence 보존</li><li>출처가 없는 nearest-only identity를 승인하지 않음</li></ul></div>
+<div class="card"><h3>아직 필요한 확인</h3><ul><li>Original `aligned_labels.npy`를 만든 upstream identity/frame convention 증거</li><li>원본 patient entry와 canonical event의 검증된 유일한 대응</li><li>동일 event의 neural onset Δt 분포 및 subject/segment별 drift</li><li>필요하다면 영상 실제 frame-edge의 독립 확인</li></ul></div></div>
+<div class="warn"><b>v004 수치 해석 주의:</b> 보고서의 “source-supported proposals: 0”을 “해당 event correspondence가 물리적으로 없다”라고 읽으면 안 됩니다. 실제 pipeline은 선택적인 `objective_identity_evidence`를 공급하지 않은 채 nearest candidate 증거를 생성했습니다. 결과는 <b>객관적인 identity proof를 획득하지 못했다</b>는 것입니다.</div>
+</section>
+<div class="page-links"><a href="p006_timing_01_overview.html">← 06A 두 verification 지도</a><a href="p006_timing_03_dual_clock.html">다음 06C → movie ↔ neural clock</a><a href="p006_timing_04_status.html">06D → P006 A3 v004 결과</a><a href="timing_alignment_original_vs_repo.html">기존 06 → technical details</a></div>
+<footer class="footer">Conceptual examples are illustrative, not recovered patient timestamps. Source: SUMMER released NWB fields; <a href="https://github.com/minkyu-choi04/neuro_mtl_summer/blob/p006-a3-v004-production-review/reports/P006_PHASE_A3_FRAME_CONVENTION_CLOCK_QC_V004.md">P006 v004 report</a>, P006 plan, A3 code, DEC-025.</footer>
+</div></body></html>

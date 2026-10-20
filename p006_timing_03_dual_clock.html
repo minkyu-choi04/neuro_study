@@ -4,7 +4,18 @@
 <nav class="nav" aria-label="Study navigation"><a href="study_index.html">← Index</a><a href="p006_timing_01_overview.html">06A 전체 지도</a><a href="p006_timing_02_event_identity.html">06B Event identity</a><a class="active" href="p006_timing_03_dual_clock.html">06C Dual clock</a><a href="p006_timing_04_status.html">06D 현재 결과</a></nav>
 <header><div class="eyebrow">06C · Verification B · Two clocks</div><h1>Movie frame time과<br>Neural recording time은 어떻게 연결되는가?</h1><p class="lead">두 번째 이해도 맞습니다. 실험 컴퓨터가 재생한 movie frame의 시간과 신경 기록 장비의 시간은 서로 다른 좌표입니다. Pause/resume과 seek는 정상적인 실험 절차 중에도 발생할 수 있으므로, “두 시계가 항상 일정한 offset”이라고 가정하면 안 됩니다.</p></header>
 <div class="key"><strong>두 층의 검증:</strong> (1) `cleaned_watchlogs`에서 관찰되는 <b>PTS ↔ neural_recording_time</b> 관계가 국소적으로 말이 되는가? (2) 그 값이 실제 presentation/TTL/acquisition의 올바른 동기화를 반영한다고 <b>독립적으로 확인</b>할 수 있는가? 현재 P006은 주로 (1)을 다뤘고, (2)를 완전히 증명하지 못했습니다.</div>
-<section><h2>1. Pause가 있을 때 두 clock의 관계</h2>
+<section><h2>0. 먼저 clock, PTS, TTL, watchlog의 의미</h2>
+<p><strong>Clock(시간축)</strong>은 어떤 시스템이 사건에 기록한 시각입니다. 영화 자체에서 “120초”라고 부르는 시간과, 실험용 노트북의 실제 재생 시각, 신경 기록 시스템의 시각은 서로 다른 값입니다. 즉 <b>세 시계가 동시에 120초를 가리킨다고 가정할 수 없습니다.</b></p>
+<table><thead><tr><th>이름</th><th>무엇을 기록하나?</th><th>왜 필요한가?</th></tr></thead><tbody>
+<tr><td>Movie <strong>PTS</strong></td><td>영화 안에서 frame이 표시될 예정인 시간. <code>120.00 s</code>처럼 초 단위.</td><td>Camera Cut 또는 Scene Cut이 영화의 어느 frame에 있는지 알 수 있음.</td></tr>
+<tr><td>Presentation/laptop clock</td><td>실험용 컴퓨터가 영상을 재생하던 실제 시간.</td><td>사용자가 pause하면 영화의 PTS는 정지해도 컴퓨터 시간은 흐름.</td></tr>
+<tr><td>Neural acquisition clock</td><td>신경 기록 장비가 spike와 다른 신호에 부여한 시각.</td><td>컷 전후의 spike를 계산하려면 컷 onset을 최종적으로 이 좌표에 놓아야 함.</td></tr>
+<tr><td><strong>TTL sync pulse</strong></td><td>두 장치에서 감지할 수 있는 디지털 동기화 전기 신호.</td><td>원 논문이 기술한 방법은 presentation computer와 neural acquisition 사이의 시간 변환을 이 신호를 이용해 추정함.</td></tr>
+<tr><td><code>raw_watchlogs</code></td><td>공개 NWB에 수록된 원본 재생 프레임 로그.</td><td>재생 정지·건너뛰기 등 실제 재생 이력을 확인할 단서.</td></tr>
+<tr><td><code>cleaned_watchlogs</code></td><td>movie <code>pts</code>(초)와 그 frame에 대응하는 <code>neural_recording_time</code>(ms)의 정리된 쌍.</td><td>P001이 frame별 neural onset을 만드는 직접적인 lookup 자료이자 P006 clock-step QC의 입력.</td></tr>
+</tbody></table>
+<p>여기서 <strong>alignment</strong>란 단순히 시계 두 개가 같은지 확인하는 것이 아니라, 한 시계의 timestamp를 다른 시계의 좌표로 대응시키는 변환입니다. 원 연구자가 이미 처리해 공개한 <code>cleaned_watchlogs</code>의 대응이 존재하는 것과, 그 대응을 원본 독립 근거로 완전히 재검증했다는 것은 다릅니다.</p>
+</section><section><h2>1. Pause가 있을 때 두 clock의 관계</h2>
 <p>다음 예시는 실제 연구의 시간값이 아닌 설명용입니다. 버튼을 누르면 정상 재생과 일시 정지가 있을 때 <b>동일 movie time</b>이 다른 neural time을 갖게 되는 모습을 볼 수 있습니다.</p>
 <div class="controls" role="group" aria-label="Clock mapping scenario"><button type="button" id="normalBtn" aria-pressed="true">연속 재생</button><button type="button" id="pauseBtn" aria-pressed="false">중간에 PAUSE</button></div>
 <div class="diagram"><h3>가로축: movie PTS · 세로축: neural clock</h3><div class="svgscroll">
@@ -19,7 +30,10 @@
 </svg></div><p class="caption">시계의 원점·비율과 neural value는 예시입니다. 실제 연속 재생에서도 변환식에는 offset 및 미세 drift가 있을 수 있습니다. Toggle은 시각적 개념 비교용입니다.</p></div>
 <div class="note"><strong>중요:</strong> pause 자체는 반드시 오류가 아닙니다. 오류가 되는 경우는 pause/seek가 로그에서 잘못 반영되어, 같은 movie event를 엉뚱한 neural onset에 정렬하거나 baseline/post window가 불연속 구간을 가로지를 때입니다.</div>
 </section>
-<section><h2>2. 현재 NWB에는 어떤 연결 정보가 있나?</h2>
+<section><h2>1A. 위 그래프에서 pause는 왜 세로 구간인가?</h2>
+<p>가상의 상황을 생각해 보겠습니다. 영화 PTS가 120.00초인 frame을 재생하다가 참가자가 15초간 pause했습니다. 컴퓨터와 neural recording clock은 계속 흐르지만 영화는 같은 프레임을 유지합니다. 따라서 x축(movie PTS)은 움직이지 않으면서 y축(neural time)만 늘어나므로 그래프에서 <b>수직 선</b>처럼 보입니다. 그 뒤 다시 재생하면 같은 movie PTS에 두 개 이상의 recording time이 대응할 수 있습니다.</p>
+<p>우리 P001은 canonical frame의 PTS를 cleaned watchlog에서 찾고, pause로 같은 PTS가 중복되는 상황에 대한 명시적 선택 규칙을 가지고 있습니다. 하지만 원 저자가 <code>aligned_labels.npy</code>를 만들 당시 사용한 pause 처리와 그 규칙이 같다고 단정할 수는 없습니다. 이것이 <b>event identity(A)</b> 문제와 <b>clock continuity(B)</b> 문제가 연결되는 지점입니다.</p>
+<div class="note">그래프의 기울기와 15초 pause는 개념 예시이며 실제 SUMMER 데이터의 특정 환자 수치가 아닙니다. 실제 확인은 <code>raw_watchlogs</code> 및 <code>cleaned_watchlogs</code>의 row마다 PTS/recording time 변화를 확인하는 방식으로 이뤄집니다.</div></section><section><h2>2. 현재 NWB에는 어떤 연결 정보가 있나?</h2>
 <div class="diagram"><h3>Clock correspondence: paired watchlog rows</h3><div class="svgscroll">
 <svg class="viz" viewBox="0 0 1040 390" role="img" aria-label="movie PTS 행과 neural recording time 행의 대응, 그리고 raw TTL ground truth와의 독립 검증이 미완료된 상태를 표현">
 <g class="label"><text x="15" y="40">Movie PTS</text><text x="15" y="150">Neural time</text><text x="15" y="293">External ground truth</text></g>
@@ -36,7 +50,11 @@
 </svg></div></div>
 <p>Original 연구는 presentation computer와 acquisition system의 동기화에 TTL을 사용했다고 기술합니다. 반면 P006 v004는 현재 공개된 NWB의 <code>cleaned_watchlogs</code>를 읽습니다. 이 테이블이 이미 처리된 결과인 이상, 내부 비교가 일치한다고 해서 original raw synchronization 전체를 독립 검증했다고 말할 수는 없습니다.</p>
 </section>
-<section><h2>3. v004는 전체 3,553,454 steps를 어떤 관점으로 분류했나?</h2>
+<section><h2>2A. P006은 clock을 어떻게 검사했을까?</h2>
+<p>각 환자의 cleaned watchlog에서 인접한 두 행을 고릅니다. 전후 movie PTS의 차이를 <code>Δmovie</code>, 전후 neural timestamp 차이를 <code>Δneural</code>이라고 정의합니다. 둘 다 <b>초</b>로 환산하여 <code>disagreement_ms = 1000 × (Δneural − Δmovie)</code>를 계산합니다. 영화를 정상적으로 25fps로 재생했다면 nominal movie frame은 약 0.040초씩 진행합니다. 이때 neural clock도 비슷하게 증가하는 것이 기대됩니다.</p>
+<div class="grid2"><div class="card"><h3>정상적인 frame step 예시</h3><p>가상의 인접 row가 <code>PTS 10.00 → 10.04 s</code>, neural time <code>50.00 → 50.04 s</code>라면 두 차이가 모두 40ms입니다. disagreement는 약 0ms입니다. 이 검사만으로 두 clock의 절대 offset이 정확하다고 말할 수는 없습니다.</p></div><div class="card"><h3>신경 clock의 큰 gap 예시</h3><p><code>PTS 10.00 → 10.04 s</code>인데 neural time이 <code>50.00 → 55.00 s</code>로 이동했다면, movie는 한 프레임만 진행한 사이 neural 시각은 5초 진행했습니다. 이는 정상 연속 재생을 그대로 가정하면 안 되는 구간입니다. 여기서 5초는 synthetic 예시이지 v004에서 관측한 실제 값이 아닙니다.</p></div></div>
+<p>v004는 movie PTS가 반복되면 <code>repeated_pts_pause</code>, 크게 앞으로 건너뛰면 <code>forward_seek_or_skip</code>, 정상 40ms step이면 <code>regular_forward_25fps</code> 등으로 분류합니다. 이것은 <b>로그 내부의 연속성과 예외를 구분하는 것</b>입니다. 원 논문의 TTL 원시 신호가 제대로 transform되었는지 독립적으로 검증하는 것과는 다릅니다.</p>
+</section><section><h2>3. v004는 전체 3,553,454 steps를 어떤 관점으로 분류했나?</h2>
 <div class="diagram"><h3>한 줄의 숫자보다 원인별 classification이 중요</h3><div class="svgscroll">
 <svg class="viz" viewBox="0 0 1050 332" role="img" aria-label="watchlog step 총 3553454 중 74 repeated PTS, 7 forward seeks, 1 regular playback gap over 100ms가 분리 집계되며 threshold counts는 서로 중첩될 수 있음을 나타낸 그림">
 <rect x="18" y="14" width="1014" height="81" rx="15" fill="#1c2e49" stroke="#4a7192"/><text x="526" y="49" class="num" text-anchor="middle">3,553,454</text><text x="526" y="75" class="muted" text-anchor="middle">all adjacent watchlog steps</text>
@@ -52,7 +70,10 @@
 </svg></div></div>
 <p><code>clock_disagreement_ms = (Δneural − Δmovie) × 1000</code>은 **인접한 watchlog row 사이 변화량**을 비교한 지표입니다. 두 시스템의 원점 offset이나 개별 event timing residual을 직접 검증하는 수치는 아닙니다.</p>
 </section>
-<section><h2>4. 연구에 중요한 것은 window가 실제로 끊겼는가?</h2>
+<section><h2>3A. 위 숫자들에서 실제로 결론낼 수 있는 범위</h2>
+<p>3,553,454개의 인접 행 중 <b>74개 repeated-PTS pause</b>와 <b>7개 forward seek/skip</b>이 관측되었습니다. 이 숫자는 환자 수나 컷 수가 아니라 <b>인접 watchlog frame pair</b> 단위입니다. 따라서 74번의 pause가 서로 독립적인 74회 사용자 동작이라는 뜻은 아닙니다.</p>
+<p><code>|Δneural−Δmovie| &gt; 20ms</code>가 112개, 40ms 초과가 82개, 100ms 초과가 76개였습니다. 같은 step이 여러 threshold에 속할 수 있어 총합을 계산하면 중복됩니다. 중요한 추가 분류는 <b>movie는 nominal 40ms씩 진행한 것으로 보이지만 neural clock discrepancy가 100ms를 초과한 step이 1개</b>라는 점입니다. 다만 그 한 개가 어느 subject의 어떤 P001 baseline 또는 post window에 놓였는지는 별도 exposure table을 확인해야 합니다.</p>
+<p>이 수치가 작다는 이유로 “P001 모든 event window가 안전하다”라고 결론낼 수는 없습니다. 먼저 window별 중첩과 관측 불가 구간, 적용할 clock tolerance의 근거를 따져야 합니다. v004의 <code>0/5/10/20/40ms</code>는 <b>시나리오별 민감도 점검 값이지, 연구자가 승인한 정상/비정상 판정 기준이 아닙니다.</b></p></section><section><h2>4. 연구에 중요한 것은 window가 실제로 끊겼는가?</h2>
 <div class="diagram"><h3>동일 이벤트의 세 window · pause/seek/gap와 교차하는지</h3><div class="svgscroll">
 <svg class="viz" viewBox="0 0 1060 395" role="img" aria-label="event 중심 마이너스 2초부터 플러스 4초까지 raster, baseline 마이너스 1초에서 마이너스 0.2초, post 0에서 1초를 표시한 범위와 그 중 discontinuity의 겹침이 QC 대상이라는 그림">
 <line x1="92" y1="313" x2="1030" y2="313" class="axis"/><rect x="105" y="35" width="896" height="74" rx="10" fill="#243b56" stroke="#82baff" stroke-width="1.5"/>
@@ -65,7 +86,9 @@
 </svg></div><p class="caption">범위는 실제 frozen P001 window에 해당하며 interruption의 위치는 설명용입니다. 한 현상이 여러 window를 동시에 관통할 수 있으므로 occurrence, window, neuron-row 단위를 구분해야 합니다.</p></div>
 <div class="warn"><b>현재 미완료인 것:</b> v004는 각 window에 descriptive issue flag와 가정별 sensitivity를 기록했지만, 완전히 <strong>검증된 safe tolerance</strong>를 승인하지 않았습니다. 따라서 어떤 window가 확실히 과학적으로 유효하다고 보증하거나, 특정 event를 제외할 수는 없습니다.</div>
 </section>
-<div class="page-links"><a href="p006_timing_02_event_identity.html">← 06B Event identity</a><a href="p006_timing_04_status.html">다음 06D →  v004 숫자와 남은 장애물</a><a href="p006_timing_01_overview.html">06A → 전체 지도</a><a href="timing_alignment_original_vs_repo.html">기존 technical guide</a></div>
+<section><h2>4A. 왜 spike count가 timing verification을 요구할까?</h2>
+<p>우리 P001은 cut onset을 0초라고 놓고, 그 직전 <b>[-1.0, -0.2)초</b> 구간을 baseline으로, 직후 <b>[0, 1.0)초</b> 구간을 post-event response로 사용합니다. <b>[-2, 4)초</b> 범위는 raster/PSTH 같은 시간적 반응 시각화에 쓰입니다. 이 시간 범위는 “movie seconds”라기보다 <b>각 환자의 neural onset에서 상대적으로 이동한 neural-recording time</b>입니다.</p>
+<p>예를 들어 post 1초 동안 영화가 잠깐 멈췄다면, post-event spike count는 영화가 계속 진행되었다는 가정 아래의 반응과 직접 비교하기 어렵습니다. 또는 raw clock의 큰 jump가 window에 들어간다면, 단순히 start와 end가 기록 범위 안에 있다는 사실로 연속적인 자극 노출을 보증할 수 없습니다. P006의 <code>window_evidence.parquet</code>는 이런 사실을 설명하는 issue flags를 생성합니다. 다만 그 table의 데이터는 “무조건 제외할 사건 목록”이 아닙니다.</p></section><div class="page-links"><a href="p006_timing_02_event_identity.html">← 06B Event identity</a><a href="p006_timing_04_status.html">다음 06D →  v004 숫자와 남은 장애물</a><a href="p006_timing_01_overview.html">06A → 전체 지도</a><a href="timing_alignment_original_vs_repo.html">기존 technical guide</a></div>
 <footer class="footer">All illustrations are conceptual; only named P006 counts and frozen window boundaries are empirical. Source: P006 A3 v004 `clock_step_summary`, `window_evidence`, `validation.json`, DEC-025.</footer>
 </div>
 <script>(function(){const n=document.getElementById('normalBtn'),p=document.getElementById('pauseBtn'),normal=document.getElementById('normalMapping'),pause=document.getElementById('pauseMapping');function set(paused){n.setAttribute('aria-pressed',String(!paused));p.setAttribute('aria-pressed',String(paused));normal.classList.toggle('show',!paused);pause.classList.toggle('show',paused)}n.addEventListener('click',()=>set(false));p.addEventListener('click',()=>set(true));})();</script>
